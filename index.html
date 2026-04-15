@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FC Landen">
+<meta name="theme-color" content="#1a6b3a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>FC Landen Planning</title>
+<style>
+:root{
+  --green:#1a6b3a;--green-light:#e8f5ee;--green-dark:#155830;
+  --blue:#1a4fa8;--blue-light:#e8f0fb;
+  --amber:#a06000;--amber-light:#fff8e8;--amber-border:#e0a020;
+  --red:#c03030;--red-light:#fff0f0;
+  --gray:#666;--gray-light:#f5f5f0;--border:#e0e0d8;
+  --safe-top:env(safe-area-inset-top);
+  --safe-bottom:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray-light);color:#1a1a1a;font-size:15px;min-height:100vh}
+/* HEADER */
+.header{background:var(--green);color:#fff;padding:calc(var(--safe-top) + 14px) 16px 14px;position:sticky;top:0;z-index:100}
+.header h1{font-size:18px;font-weight:700}
+.header .sub{font-size:12px;opacity:0.75;margin-top:1px}
+/* TOOLBAR */
+.toolbar{background:#fff;border-bottom:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.toolbar::-webkit-scrollbar{display:none}
+select{font-size:14px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:#fff;color:#1a1a1a;flex-shrink:0;min-width:160px}
+.btn{font-size:13px;font-weight:600;padding:8px 14px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.btn-primary{background:var(--green);color:#fff}
+.btn-secondary{background:var(--blue);color:#fff}
+.btn-outline{background:#fff;color:#1a1a1a;border:1px solid var(--border)}
+/* STATUS */
+.status-bar{background:var(--green-light);color:var(--green);font-size:12px;padding:6px 16px;font-weight:500}
+.status-bar.warn{background:var(--amber-light);color:var(--amber)}
+/* EMPTY STATE */
+.empty{text-align:center;padding:60px 24px}
+.empty-icon{font-size:48px;margin-bottom:16px}
+.empty h2{font-size:20px;font-weight:700;margin-bottom:8px}
+.empty p{font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.5}
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 16px}
+.stat{background:#fff;border-radius:12px;padding:12px;text-align:center}
+.stat-val{font-size:22px;font-weight:700;line-height:1}
+.stat-label{font-size:11px;color:var(--gray);margin-top:4px}
+/* MATCH CARDS */
+.matches{padding:0 16px 100px}
+.day-header{font-size:12px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;padding:12px 0 6px}
+.card{background:#fff;border-radius:14px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.card-header{padding:12px 14px 8px;display:flex;align-items:flex-start;gap:10px}
+.card-time{font-size:13px;font-weight:700;color:var(--gray);min-width:40px}
+.card-info{flex:1;min-width:0}
+.team-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:4px}
+.match-name{font-size:13px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.time-windows{font-size:11px;color:#aaa;margin-top:2px}
+.card-status{flex-shrink:0}
+.status-pill{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600}
+.pill-ok{background:var(--green-light);color:var(--green)}
+.pill-inc{background:var(--gray-light);color:var(--gray)}
+.pill-cf{background:var(--red-light);color:var(--red)}
+/* CARD BODY - selectors */
+.card-body{padding:0 14px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card-body.three-col{grid-template-columns:1fr 1fr 1fr}
+.field-group{display:flex;flex-direction:column;gap:3px}
+.field-label{font-size:11px;color:var(--gray);font-weight:600;text-transform:uppercase;letter-spacing:0.3px}
+.field-select{font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;width:100%;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
+.field-select.fixed{border-color:var(--amber-border);background-color:var(--amber-light)}
+.field-select.conflict{border-color:var(--red);background-color:var(--red-light)}
+.field-note{font-size:11px;color:var(--green);margin-top:1px}
+.field-shower{font-size:11px;color:var(--blue);margin-top:1px}
+.field-fixed{font-size:11px;color:var(--amber);margin-top:1px}
+.warm-tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:6px;background:var(--amber-light);color:var(--amber);border:0.5px solid var(--amber-border);margin-top:3px;font-weight:500}
+/* CONFLICT BOX */
+.conflict-box{margin:0 16px 12px;background:var(--red-light);border:1px solid #f0c0c0;border-radius:12px;padding:12px 14px}
+.conflict-box h3{font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px}
+.conflict-item{font-size:12px;color:var(--red);padding:3px 0;border-bottom:1px solid #f5d0d0}
+.conflict-item:last-child{border:none}
+/* IMPORT MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px calc(24px + var(--safe-bottom));width:100%;max-width:500px}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:6px}
+.modal p{font-size:14px;color:var(--gray);margin-bottom:20px;line-height:1.5}
+.modal-btns{display:flex;flex-direction:column;gap:10px}
+.file-input-wrap{position:relative}
+.file-input-wrap input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:100px}
+.modal-cancel{text-align:center;padding:14px;font-size:15px;color:var(--blue);font-weight:600;cursor:pointer;margin-top:4px}
+/* FAB */
+.fab{position:fixed;bottom:calc(24px + var(--safe-bottom));right:20px;background:var(--green);color:#fff;border:none;border-radius:50%;width:56px;height:56px;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.2);cursor:pointer;z-index:50}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>FC Landen Planning</h1>
+  <div class="sub">Veld &amp; Kleedkamers</div>
+</div>
+
+<div class="toolbar">
+  <select id="date-sel"><option value="">— Kies speeldag —</option></select>
+  <button class="btn btn-primary" onclick="autoAssign()">Auto</button>
+  <button class="btn btn-secondary" onclick="openImport()">CSV laden</button>
+  <button class="btn btn-outline" onclick="exportTxt()">Exporteer</button>
+</div>
+
+<div id="status-bar" class="status-bar" style="display:none"></div>
+
+<div id="empty-state" class="empty">
+  <div class="empty-icon">⚽</div>
+  <h2>Geen data geladen</h2>
+  <p>Laad je wedstrijdplanning CSV om te beginnen met de kleedkamer- en veldplanning.</p>
+  <button class="btn btn-secondary" onclick="openImport()" style="font-size:15px;padding:12px 24px">CSV bestand laden</button>
+</div>
+
+<div id="main-content" style="display:none">
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="s-m">-</div><div class="stat-label">Wedstrijden</div></div>
+    <div class="stat"><div class="stat-val" id="s-w" style="color:var(--amber)">-</div><div class="stat-label">C-veld opwarm</div></div>
+    <div class="stat"><div class="stat-val" id="s-c" style="color:var(--red)">-</div><div class="stat-label">Conflicten</div></div>
+  </div>
+  <div class="matches" id="matches-list"></div>
+  <div id="conflict-box"></div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="import-modal" onclick="closeImportIfOutside(event)">
+  <div class="modal">
+    <h2>CSV laden</h2>
+    <p>Selecteer je <strong>wedstrijden.csv</strong> bestand. Het bestand moet kolommen bevatten: Datum, Uur, Team, Match, Thuis/Uit.</p>
+    <div class="modal-btns">
+      <div class="file-input-wrap">
+        <button class="btn btn-secondary" style="width:100%;font-size:15px;padding:14px">Bestand kiezen</button>
+        <input type="file" accept=".csv" onchange="handleFileImport(event)">
+      </div>
+    </div>
+    <div class="modal-cancel" onclick="closeImport()">Annuleren</div>
+  </div>
+</div>
+
+<button class="fab" onclick="autoAssign()" title="Auto-toewijzen">↻</button>
+
+<script>
+// ---- DATA ----
+let MATCHES={}, DATE_LABELS={};
+const assignments={},noteMap={},showerMap={},fixedMap={},veldMap={},warmMap={};
+
+// ---- CSV PARSING ----
+function parseCSV(raw){
+  const lines=raw.replace(/\r/g,'').split('\n').filter(l=>l.trim());
+  if(lines.length<2)return{};
+  const headers=lines[0].replace(/^\uFEFF/,'').split(',').map(h=>h.trim());
+  const iD=headers.indexOf('Datum'),iU=headers.indexOf('Uur'),iT=headers.indexOf('Team'),iM=headers.indexOf('Match'),iTU=headers.indexOf('Thuis/Uit');
+  if(iD<0||iU<0||iT<0||iM<0||iTU<0){alert('CSV kolommen niet herkend.');return{};}
+  const byDate={};
+  for(let i=1;i<lines.length;i++){
+    const cols=lines[i].split(',');
+    if(cols.length<5)continue;
+    const datum=cols[iD]?.trim(),uur=cols[iU]?.trim(),team=cols[iT]?.trim(),match=cols[iM]?.trim(),thu=cols[iTU]?.trim();
+    if(!datum||!uur||!team||!match||thu!=='Thuis')continue;
+    if(!byDate[datum])byDate[datum]=[];
+    byDate[datum].push({uur,team,match});
+  }
+  return byDate;
+}
+
+function loadData(raw,fname){
+  const data=parseCSV(raw);
+  const dates=Object.keys(data).sort();
+  if(!dates.length){showStatus('Geen thuiswedstrijden gevonden','warn');return;}
+  MATCHES={};DATE_LABELS={};
+  dates.forEach(d=>{
+    MATCHES[d]=data[d].sort((a,b)=>toMins(a.uur)-toMins(b.uur));
+    const dt=new Date(d);
+    const days=['zo','ma','di','wo','do','vr','za'];
+    const months=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+    DATE_LABELS[d]=`${days[dt.getDay()]} ${dt.getDate()} ${months[dt.getMonth()]} ${dt.getFullYear()}`;
+  });
+  const sel=document.getElementById('date-sel');
+  sel.innerHTML='';
+  dates.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=DATE_LABELS[d];sel.appendChild(o);});
+  document.getElementById('empty-state').style.display='none';
+  document.getElementById('main-content').style.display='block';
+  const total=Object.values(MATCHES).reduce((s,m)=>s+m.length,0);
+  showStatus(`${fname} — ${total} thuiswedstrijden op ${dates.length} speeldagen`,'ok');
+  closeImport();
+  autoAssign();
+}
+
+function showStatus(msg,type){
+  const el=document.getElementById('status-bar');
+  el.textContent=msg;el.className='status-bar'+(type==='warn'?' warn':'');el.style.display='block';
+}
+
+function handleFileImport(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>loadData(ev.target.result,file.name);
+  reader.readAsText(file,'utf-8');
+}
+
+function openImport(){document.getElementById('import-modal').classList.add('open');}
+function closeImport(){document.getElementById('import-modal').classList.remove('open');}
+function closeImportIfOutside(e){if(e.target===document.getElementById('import-modal'))closeImport();}
+
+document.getElementById('date-sel').addEventListener('change',autoAssign);
+
+// ---- PLANNING LOGIC ----
+const KK_THUIS=["KK 4","KK 5","KK 6"],KK_BEZOEKER=["KK 1","KK 2","KK 3"],KK_ALL=[...KK_BEZOEKER,...KK_THUIS];
+const KK_OPTS_THUIS=["—",...KK_THUIS,"Container 1","Container 2"],KK_OPTS_BEZ=["—",...KK_BEZOEKER,"Container 1","Container 2"];
+const VELDEN=["A-veld","B-veld","C-veld"],VELD_OPTS=["—",...VELDEN];
+
+function isFixedKK5(t){return["A-ploeg","B-ploeg"].includes(t);}
+function isSenior(t){return["A-ploeg","B-ploeg","Reserven"].includes(t);}
+function getAge(t){if(isSenior(t))return t;return"U"+parseInt(t.replace(/\D/g,"")||"0");}
+function getAgeNum(t){if(isSenior(t))return 99;return parseInt(t.replace(/\D/g,"")||"0");}
+function getCat(t){if(isSenior(t))return"senior";const n=getAgeNum(t);if(n<=7)return"u6_7";if(n<=11)return"u8_11";return"u12_17";}
+function isU67(t){return getAgeNum(t)>=6&&getAgeNum(t)<=7;}
+function getOcc(t,uur){const ko=toMins(uur),c=getCat(t);if(c==="u6_7")return{start:ko-30,end:ko+90};if(c==="u8_11")return{start:ko-30,end:ko+135};if(c==="u12_17")return{start:ko-60,end:ko+135};return{start:ko-60,end:ko+165};}
+function matchEnd(t,uur){return toMins(uur)+(getCat(t)==="u6_7"?60:105);}
+function getVeldDur(t){const c=getCat(t);if(c==="u6_7")return 60;if(c==="u8_11")return 90;return 105;}
+function getMatchOcc(t,uur){const ko=toMins(uur);return{start:ko,end:ko+getVeldDur(t)};}
+function getVeldOcc(t,uur){const ko=toMins(uur);return{start:ko-30,end:ko+getVeldDur(t)};}
+function getVeldSlots(t){const n=getAgeNum(t);if(n<=9)return 1;if(n<=13)return 2;return 4;}
+function visitorCanShare(t){return getAgeNum(t)<=13;}
+function teamColor(t){const c=getCat(t);if(c==="senior")return{bg:"#EAE8FC",tx:"#3C3489"};if(c==="u12_17")return{bg:"#DAEAF8",tx:"#0C447C"};if(c==="u8_11")return{bg:"#C8EEE4",tx:"#085041"};return{bg:"#E0F8F0",tx:"#085041"};}
+function toMins(s){const[h,m]=s.split(":").map(Number);return h*60+m;}
+function toTime(m){return`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;}
+function overlaps(a,b){return a.start<b.end&&b.start<a.end;}
+function getKey(d,i,s){return`${d}_${i}_${s}`;}
+function freeQ(slots,occ){return 4-slots.filter(s=>overlaps(occ,s)).reduce((s,x)=>s+x.slots,0);}
+
+function assignVeld(matches,order,veldSlots){
+  const sorted=[...order].sort((a,b)=>{
+    const ta=toMins(matches[a].uur),tb=toMins(matches[b].uur);
+    if(ta!==tb)return ta-tb;
+    return getAgeNum(matches[b].team)-getAgeNum(matches[a].team);
+  });
+  const result={},warmResult={};
+  sorted.forEach(i=>{
+    const m=matches[i];
+    const needed=getVeldSlots(m.team);
+    const ko=toMins(m.uur),warmStart=ko-30;
+    const fullOcc=getVeldOcc(m.team,m.uur),matchOcc=getMatchOcc(m.team,m.uur);
+    let assigned=null,warmVeld=null;
+    const aSlots=veldSlots["A-veld"];
+    if(freeQ(aSlots,matchOcc)>=needed){
+      const latestEnd=aSlots.filter(s=>s.end<=warmStart).reduce((mx,s)=>Math.max(mx,s.end),0);
+      const gap=warmStart-latestEnd;
+      if(gap>=30||latestEnd===0){
+        assigned="A-veld";
+        aSlots.push({...fullOcc,slots:needed,matchIdx:i});
+      } else {
+        assigned="A-veld";warmVeld="C-veld";
+        aSlots.push({...matchOcc,slots:needed,matchIdx:i});
+      }
+    } else {
+      for(const veld of["B-veld","C-veld"]){
+        if(freeQ(veldSlots[veld],fullOcc)>=needed){
+          assigned=veld;
+          veldSlots[veld].push({...fullOcc,slots:needed,matchIdx:i});
+          break;
+        }
+      }
+    }
+    result[i]=assigned||"—";warmResult[i]=warmVeld;
+  });
+  return{result,warmResult};
+}
+
+function findKK(pool,kkSlots,cs,gOcc,age,canShare){
+  for(const kn of pool){
+    const blocked=kkSlots[kn].some(s=>{if(!overlaps(gOcc,s))return false;if(canShare&&s.age===age)return false;return true;});
+    if(!blocked)return kn;
+  }
+  for(const cn of["Container 1","Container 2"]){if(!cs[cn].some(s=>overlaps(gOcc,s)))return cn;}
+  return null;
+}
+function pushSlot(a,kkSlots,cs,occ,side,age,idx){
+  if(!a||a==="—")return;
+  if(a.startsWith("Container"))cs[a].push({...occ,age,matchIdx:idx});
+  else kkSlots[a].push({...occ,side,age,matchIdx:idx});
+}
+function doShower(kkSlots,team,uur,idx,key){
+  const mEnd=matchEnd(team,uur),shOcc={start:mEnd,end:mEnd+30};
+  let shKK=null;
+  for(const kn of KK_ALL){if(!kkSlots[kn].some(s=>overlaps(shOcc,s))){shKK=kn;kkSlots[kn].push({...shOcc,side:"shower",age:getAge(team),matchIdx:idx});break;}}
+  showerMap[key]=shKK?`Douche: ${shKK} vanaf ${toTime(mEnd)}`:"Geen vrije KK voor douche";
+}
+
+function autoAssign(){
+  const date=document.getElementById("date-sel").value;
+  if(!date||!MATCHES[date])return;
+  const matches=MATCHES[date];
+  [noteMap,showerMap,fixedMap,veldMap,warmMap].forEach(m=>Object.keys(m).forEach(k=>delete m[k]));
+  const kkSlots={};KK_ALL.forEach(k=>kkSlots[k]=[]);
+  const cs={"Container 1":[],"Container 2":[]};
+  const veldSlots={};VELDEN.forEach(v=>veldSlots[v]=[]);
+  const order=[...matches.keys()].sort((a,b)=>toMins(matches[a].uur)-toMins(matches[b].uur));
+
+  const{result:vr,warmResult:wr}=assignVeld(matches,order,veldSlots);
+  Object.assign(veldMap,vr);Object.assign(warmMap,wr);
+
+  const ageGroupsT={};
+  matches.forEach((m,i)=>{const age=getAge(m.team);if(!ageGroupsT[age])ageGroupsT[age]=[];ageGroupsT[age].push(i);});
+  const doneT=new Set();
+  order.forEach(i=>{
+    const m=matches[i];if(!isFixedKK5(m.team))return;
+    const age=getAge(m.team);if(doneT.has(age))return;doneT.add(age);
+    ageGroupsT[age].forEach(j=>{
+      const key=getKey(date,j,"thuis");
+      assignments[key]="KK 5";fixedMap[key]=true;
+      pushSlot("KK 5",kkSlots,cs,getOcc(matches[j].team,matches[j].uur),"thuis",age,j);
+    });
+  });
+  order.forEach(i=>{
+    const m=matches[i];const age=getAge(m.team);if(doneT.has(age))return;doneT.add(age);
+    const group=ageGroupsT[age];
+    const occs=group.map(j=>getOcc(matches[j].team,matches[j].uur));
+    const gOcc={start:Math.min(...occs.map(o=>o.start)),end:Math.max(...occs.map(o=>o.end))};
+    const assigned=findKK(KK_THUIS,kkSlots,cs,gOcc,age,true);
+    group.forEach(j=>{
+      const key=getKey(date,j,"thuis");
+      assignments[key]=assigned||"—";
+      pushSlot(assigned,kkSlots,cs,getOcc(matches[j].team,matches[j].uur),"thuis",age,j);
+      if(assigned&&assigned.startsWith("Container"))doShower(kkSlots,matches[j].team,matches[j].uur,j,key);
+      if(group.length>1){const others=group.filter(k=>k!==j).map(k=>matches[k].team).join(", ");noteMap[key]=`Samen: ${others}`;}
+    });
+  });
+
+  const ageGroupsV={};
+  matches.forEach((m,i)=>{const age=getAge(m.team);if(!ageGroupsV[age])ageGroupsV[age]=[];ageGroupsV[age].push(i);});
+  const doneV=new Set();
+  order.forEach(i=>{
+    const m=matches[i];const age=getAge(m.team);
+    const solo=!visitorCanShare(m.team)&&!isU67(m.team);
+    const dk=solo?age+"_"+i:age;
+    if(doneV.has(dk))return;doneV.add(dk);
+    const group=solo?[i]:ageGroupsV[age];
+    const occs=group.map(j=>getOcc(matches[j].team,matches[j].uur));
+    const gOcc={start:Math.min(...occs.map(o=>o.start)),end:Math.max(...occs.map(o=>o.end))};
+    const assigned=findKK(KK_BEZOEKER,kkSlots,cs,gOcc,age,!solo);
+    group.forEach(j=>{
+      const key=getKey(date,j,"bezoeker");
+      assignments[key]=assigned||"—";
+      pushSlot(assigned,kkSlots,cs,getOcc(matches[j].team,matches[j].uur),"bezoeker",age,j);
+      if(assigned&&assigned.startsWith("Container"))doShower(kkSlots,matches[j].team,matches[j].uur,j,key);
+      if(group.length>1){const others=group.filter(k=>k!==j).map(k=>matches[k].match.split(" - ")[1]||"?").join(", ");noteMap[key]=`Samen: ${others}`;}
+    });
+  });
+  render();
+}
+
+function checkConflicts(date){
+  const matches=MATCHES[date];
+  const cfKeys=new Set(),cfDetails=[];
+  const all=[];
+  matches.forEach((_,i)=>["thuis","bezoeker"].forEach(s=>all.push({key:getKey(date,i,s),i,s})));
+  for(let a=0;a<all.length;a++)for(let b=a+1;b<all.length;b++){
+    const A=all[a],B=all[b];
+    const va=assignments[A.key],vb=assignments[B.key];
+    if(!va||!vb||va==="—"||va!==vb||va.startsWith("Container"))continue;
+    const sameAge=getAge(MATCHES[date][A.i].team)===getAge(MATCHES[date][B.i].team);
+    if(A.s==="thuis"&&B.s==="thuis"&&sameAge)continue;
+    if(A.s==="bezoeker"&&B.s==="bezoeker"&&sameAge&&visitorCanShare(MATCHES[date][A.i].team))continue;
+    const oa=getOcc(MATCHES[date][A.i].team,MATCHES[date][A.i].uur);
+    const ob=getOcc(MATCHES[date][B.i].team,MATCHES[date][B.i].uur);
+    if(!overlaps(oa,ob))continue;
+    cfKeys.add(A.key);cfKeys.add(B.key);
+    if(!cfDetails.find(c=>c.keys.has(A.key)&&c.keys.has(B.key)))
+      cfDetails.push({kk:va,keys:new Set([A.key,B.key]),
+        desc:`${va}: ${MATCHES[date][A.i].team} ${A.s} (${MATCHES[date][A.i].uur}) en ${MATCHES[date][B.i].team} ${B.s} (${MATCHES[date][B.i].uur})`});
+  }
+  return{cfKeys,cfDetails};
+}
+
+function getVeldBg(v){if(v==="A-veld")return"#E1F5EE";if(v==="B-veld")return"#E6F1FB";return"#FAEEDA";}
+function getVeldTx(v){if(v==="A-veld")return"#085041";if(v==="B-veld")return"#042C53";return"#412402";}
+
+function render(){
+  const date=document.getElementById("date-sel").value;
+  if(!date||!MATCHES[date])return;
+  const matches=MATCHES[date];
+  const{cfKeys,cfDetails}=checkConflicts(date);
+  let warmCount=0;
+  matches.forEach((_,i)=>{if(warmMap[i])warmCount++;});
+
+  document.getElementById("s-m").textContent=matches.length;
+  document.getElementById("s-w").textContent=warmCount;
+  document.getElementById("s-c").textContent=cfDetails.length;
+
+  const list=document.getElementById("matches-list");
+  list.innerHTML=`<div class="day-header">${DATE_LABELS[date]}</div>`;
+
+  matches.forEach((m,i)=>{
+    const hKey=getKey(date,i,"thuis"),vKey=getKey(date,i,"bezoeker");
+    const occ=getOcc(m.team,m.uur),matchOcc=getMatchOcc(m.team,m.uur),veldOcc=getVeldOcc(m.team,m.uur);
+    const hVal=assignments[hKey]||"—",vVal=assignments[vKey]||"—";
+    const hC=cfKeys.has(hKey),vC=cfKeys.has(vKey);
+    const veld=veldMap[i]||"—",warm=warmMap[i]||null;
+    const isOk=hVal!=="—"&&vVal!=="—"&&veld!=="—"&&!hC&&!vC;
+    const col=teamColor(m.team);
+    const slots=getVeldSlots(m.team);
+    const slotLabel=slots===1?"¼ veld":slots===2?"½ veld":"vol";
+
+    const card=document.createElement("div");card.className="card";
+
+    // Header
+    const veldWindow=warm?`Wedstrijd: ${toTime(matchOcc.start)}–${toTime(matchOcc.end)}`:`Veld: ${toTime(veldOcc.start)}–${toTime(veldOcc.end)}`;
+    const statusClass=isOk?"pill-ok":hC||vC?"pill-cf":"pill-inc";
+    const statusTxt=isOk?"OK":hC||vC?"!":"…";
+    card.innerHTML=`
+      <div class="card-header">
+        <div class="card-time">${m.uur}</div>
+        <div class="card-info">
+          <span class="team-badge" style="background:${col.bg};color:${col.tx}">${m.team}</span>
+          <div class="match-name">${m.match}</div>
+          <div class="time-windows">KK: ${toTime(occ.start)}–${toTime(occ.end)} | ${veldWindow}</div>
+        </div>
+        <div class="card-status"><span class="status-pill ${statusClass}">${statusTxt}</span></div>
+      </div>`;
+
+    // Body
+    const body=document.createElement("div");body.className="card-body three-col";
+
+    // Veld
+    const veldGroup=document.createElement("div");veldGroup.className="field-group";
+    const veldLabel=document.createElement("div");veldLabel.className="field-label";veldLabel.textContent="Veld";
+    const veldSel=document.createElement("select");veldSel.className="field-select";
+    veldSel.style.cssText=veld!=="—"?`border-color:${getVeldTx(veld)};background:${getVeldBg(veld)};color:${getVeldTx(veld)}`:"";
+    VELD_OPTS.forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=k;if(veld===k)o.selected=true;veldSel.appendChild(o);});
+    veldSel.addEventListener("change",e=>{veldMap[i]=e.target.value;render();});
+    const veldSub=document.createElement("div");veldSub.className="field-note";veldSub.textContent=slotLabel;
+    veldGroup.appendChild(veldLabel);veldGroup.appendChild(veldSel);veldGroup.appendChild(veldSub);
+    if(warm){const wt=document.createElement("span");wt.className="warm-tag";wt.textContent=`↑ ${warm}`;veldGroup.appendChild(wt);}
+
+    // Thuis KK
+    const thuisGroup=document.createElement("div");thuisGroup.className="field-group";
+    const thuisLabel=document.createElement("div");thuisLabel.className="field-label";thuisLabel.textContent="Thuis KK";
+    const thuisSel=document.createElement("select");
+    thuisSel.className="field-select"+(hC?" conflict":fixedMap[hKey]?" fixed":"");
+    KK_OPTS_THUIS.forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=k;if((assignments[hKey]||"—")===k)o.selected=true;thuisSel.appendChild(o);});
+    thuisSel.addEventListener("change",e=>{assignments[hKey]=e.target.value;render();});
+    thuisGroup.appendChild(thuisLabel);thuisGroup.appendChild(thuisSel);
+    if(fixedMap[hKey]){const f=document.createElement("div");f.className="field-fixed";f.textContent="Vast (P1/P4)";thuisGroup.appendChild(f);}
+    if(noteMap[hKey]){const n=document.createElement("div");n.className="field-note";n.textContent=noteMap[hKey];thuisGroup.appendChild(n);}
+    if(showerMap[hKey]){const s=document.createElement("div");s.className="field-shower";s.textContent=showerMap[hKey];thuisGroup.appendChild(s);}
+
+    // Bezoeker KK
+    const bezGroup=document.createElement("div");bezGroup.className="field-group";
+    const bezLabel=document.createElement("div");bezLabel.className="field-label";bezLabel.textContent="Bezoeker KK";
+    const bezSel=document.createElement("select");
+    bezSel.className="field-select"+(vC?" conflict":"");
+    KK_OPTS_BEZ.forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=k;if((assignments[vKey]||"—")===k)o.selected=true;bezSel.appendChild(o);});
+    bezSel.addEventListener("change",e=>{assignments[vKey]=e.target.value;render();});
+    bezGroup.appendChild(bezLabel);bezGroup.appendChild(bezSel);
+    if(noteMap[vKey]){const n=document.createElement("div");n.className="field-note";n.textContent=noteMap[vKey];bezGroup.appendChild(n);}
+    if(showerMap[vKey]){const s=document.createElement("div");s.className="field-shower";s.textContent=showerMap[vKey];bezGroup.appendChild(s);}
+
+    body.appendChild(veldGroup);body.appendChild(thuisGroup);body.appendChild(bezGroup);
+    card.appendChild(body);
+    list.appendChild(card);
+  });
+
+  const cfBox=document.getElementById("conflict-box");
+  cfBox.innerHTML="";
+  if(cfDetails.length>0){
+    const box=document.createElement("div");box.className="conflict-box";
+    box.innerHTML=`<h3>Conflicten (${cfDetails.length})</h3>`;
+    cfDetails.forEach(c=>{const item=document.createElement("div");item.className="conflict-item";item.textContent=c.desc;box.appendChild(item);});
+    cfBox.appendChild(box);
+  }
+}
+
+function exportTxt(){
+  const date=document.getElementById("date-sel").value;
+  if(!MATCHES[date])return;
+  const matches=MATCHES[date];
+  let txt=`FC LANDEN — ${DATE_LABELS[date]}\n${"=".repeat(35)}\n`;
+  matches.forEach((m,i)=>{
+    const h=assignments[getKey(date,i,"thuis")]||"—",v=assignments[getKey(date,i,"bezoeker")]||"—";
+    const veld=veldMap[i]||"—",warm=warmMap[i];
+    const slots=getVeldSlots(m.team);
+    const slotLabel=slots===1?"¼ veld":slots===2?"½ veld":"vol veld";
+    const occ=getOcc(m.team,m.uur),matchOcc=getMatchOcc(m.team,m.uur),veldOcc=getVeldOcc(m.team,m.uur);
+    const fh=fixedMap[getKey(date,i,"thuis")]?" [vast]":"";
+    const nh=noteMap[getKey(date,i,"thuis")]?` (${noteMap[getKey(date,i,"thuis")]})`:""
+    const nv=noteMap[getKey(date,i,"bezoeker")]?` (${noteMap[getKey(date,i,"bezoeker")]})`:""
+    const sh=showerMap[getKey(date,i,"thuis")]?`\n    ${showerMap[getKey(date,i,"thuis")]}`:""
+    const sv=showerMap[getKey(date,i,"bezoeker")]?`\n    ${showerMap[getKey(date,i,"bezoeker")]}`:""
+    const warmTxt=warm?`\n    Opwarmen: ${warm}`:"";
+    const veldTxt=warm?`${veld} (${slotLabel}) wedstrijd ${toTime(matchOcc.start)}-${toTime(matchOcc.end)}`:`${veld} (${slotLabel}) ${toTime(veldOcc.start)}-${toTime(veldOcc.end)}`;
+    txt+=`\n${m.uur}  ${m.team}\n  ${m.match}\n  Veld: ${veldTxt}${warmTxt}\n  Thuis: ${h}${fh}${nh}${sh}\n  Bezoeker: ${v}${nv}${sv}\n`;
+  });
+  const blob=new Blob([txt],{type:"text/plain"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=`planning_${date}.txt`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Service Worker registratie
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
